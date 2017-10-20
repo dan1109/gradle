@@ -33,6 +33,10 @@ trait CppTaskNames {
         installTask(project, DEBUG)
     }
 
+    String installTaskDebugStatic(String project = '') {
+        installTask(project, DEBUG, 'Static')
+    }
+
     String[] compileTasksRelease(String project = '') {
         compileTasks(project, RELEASE)
     }
@@ -45,25 +49,41 @@ trait CppTaskNames {
         installTask(project, RELEASE)
     }
 
-    String[] compileTasks(String project = '', String buildType) {
-        ["${project}:depend${buildType}Cpp", compileTask(project, buildType)] as String[]
+    String[] compileTasks(String project = '', String buildType, String linkage = '') {
+        ["${project}:depend${buildType}${linkage}Cpp", compileTask(project, buildType, linkage)] as String[]
     }
 
-    String compileTask(String project = '', String buildType) {
-        "${project}:compile${buildType}Cpp"
+    String compileTask(String project = '', String buildType, String linkage = '') {
+        "${project}:compile${buildType}${linkage}Cpp"
     }
 
-    String linkTask(String project = '', String buildType) {
-        "${project}:link${buildType}"
+    String linkTask(String project = '', String buildType, String linkage = '') {
+        "${project}:link${buildType}${linkage}"
     }
 
-    String installTask(String project = '', String buildType) {
-        "${project}:install${buildType}"
+    String createTask(String project = '', String buildType) {
+        "${project}:create${buildType}Static"
+    }
+
+    String installTask(String project = '', String buildType, String linkage = '') {
+        "${project}:install${buildType}${linkage}"
     }
 
     String[] compileAndLinkTasks(List<String> projects = [''], String buildType) {
         projects.collect { project ->
             [*compileTasks(project, buildType), linkTask(project, buildType)]
+        }.flatten()
+    }
+
+    String[] compileAndCreateTasks(List<String> projects = [''], String buildType) {
+        projects.collect { project ->
+            [*compileTasks(project, buildType, 'Static'), createTask(project, buildType)]
+        }.flatten()
+    }
+
+    String[] compileAndLinkStaticTasks(List<String> projects = [''], String buildType) {
+        projects.collect { project ->
+            [*compileTasks(project, buildType, 'Static'), linkTask(project, buildType, 'Static')]
         }.flatten()
     }
 

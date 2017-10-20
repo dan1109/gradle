@@ -21,14 +21,14 @@ import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Provider;
-import org.gradle.language.cpp.CppExecutable;
+import org.gradle.language.cpp.CppStaticLibrary;
 import org.gradle.language.cpp.Linkage;
 
 import javax.inject.Inject;
 
-public class DefaultCppExecutable extends DefaultCppBinary implements CppExecutable {
+public class DefaultCppStaticLibrary extends DefaultCppBinary implements CppStaticLibrary {
     @Inject
-    public DefaultCppExecutable(String name, ObjectFactory objectFactory, Provider<String> baseName, boolean debuggable, FileCollection sourceFiles, FileCollection componentHeaderDirs, ConfigurationContainer configurations, Configuration implementation, Linkage linkage) {
-        super(name, objectFactory, baseName, debuggable, sourceFiles, componentHeaderDirs, configurations, implementation, linkage);
+    public DefaultCppStaticLibrary(String name, ObjectFactory objectFactory, Provider<String> baseName, boolean debuggable, FileCollection sourceFiles, FileCollection componentHeaderDirs, ConfigurationContainer configurations, Configuration implementation) {
+        super(name, objectFactory, baseName, debuggable, sourceFiles, componentHeaderDirs, configurations, implementation, Linkage.STATIC);
     }
 }

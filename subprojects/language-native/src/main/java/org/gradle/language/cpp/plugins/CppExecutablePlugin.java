@@ -78,6 +78,8 @@ public class CppExecutablePlugin implements Plugin<ProjectInternal> {
         project.getComponents().add(application);
         project.getComponents().add(application.getDebugExecutable());
         project.getComponents().add(application.getReleaseExecutable());
+        project.getComponents().add(application.getDebugStaticExecutable());
+        project.getComponents().add(application.getReleaseStaticExecutable());
 
         // Configure the component
         application.getBaseName().set(project.getName());

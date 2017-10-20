@@ -22,12 +22,13 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Provider;
 import org.gradle.language.cpp.CppSharedLibrary;
+import org.gradle.language.cpp.Linkage;
 
 import javax.inject.Inject;
 
 public class DefaultCppSharedLibrary extends DefaultCppBinary implements CppSharedLibrary {
     @Inject
     public DefaultCppSharedLibrary(String name, ObjectFactory objectFactory, Provider<String> baseName, boolean debuggable, FileCollection sourceFiles, FileCollection componentHeaderDirs, ConfigurationContainer configurations, Configuration implementation) {
-        super(name, objectFactory, baseName, debuggable, sourceFiles, componentHeaderDirs, configurations, implementation);
+        super(name, objectFactory, baseName, debuggable, sourceFiles, componentHeaderDirs, configurations, implementation, Linkage.SHARED);
     }
 }

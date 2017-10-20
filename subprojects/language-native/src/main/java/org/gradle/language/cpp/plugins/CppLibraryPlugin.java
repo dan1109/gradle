@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import org.gradle.api.Action;
 import org.gradle.api.Incubating;
 import org.gradle.api.Plugin;
+import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurablePublishArtifact;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
@@ -39,10 +40,12 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.bundling.Zip;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
 import org.gradle.language.cpp.CppLibrary;
+import org.gradle.language.cpp.Linkage;
 import org.gradle.language.cpp.internal.DefaultCppLibrary;
 import org.gradle.language.cpp.internal.MainLibraryVariant;
 import org.gradle.language.cpp.internal.NativeRuntimeVariant;
 import org.gradle.nativeplatform.platform.internal.NativePlatformInternal;
+import org.gradle.nativeplatform.tasks.CreateStaticLibrary;
 import org.gradle.nativeplatform.tasks.LinkSharedLibrary;
 import org.gradle.nativeplatform.toolchain.internal.NativeToolChainInternal;
 import org.gradle.nativeplatform.toolchain.internal.PlatformToolProvider;
@@ -53,6 +56,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 import static org.gradle.language.cpp.CppBinary.DEBUGGABLE_ATTRIBUTE;
+import static org.gradle.language.cpp.CppBinary.LINKAGE_ATTRIBUTE;
 
 /**
  * <p>A plugin that produces a native library from C++ source.</p>
@@ -92,6 +96,8 @@ public class CppLibraryPlugin implements Plugin<ProjectInternal> {
         project.getComponents().add(library);
         project.getComponents().add(library.getDebugSharedLibrary());
         project.getComponents().add(library.getReleaseSharedLibrary());
+        project.getComponents().add(library.getDebugStaticLibrary());
+        project.getComponents().add(library.getReleaseStaticLibrary());
 
         // Configure the component
         library.getBaseName().set(project.getName());
@@ -152,6 +158,7 @@ public class CppLibraryPlugin implements Plugin<ProjectInternal> {
         debugLinkElements.setCanBeResolved(false);
         debugLinkElements.getAttributes().attribute(Usage.USAGE_ATTRIBUTE, linkUsage);
         debugLinkElements.getAttributes().attribute(DEBUGGABLE_ATTRIBUTE, true);
+        debugLinkElements.getAttributes().attribute(LINKAGE_ATTRIBUTE, Linkage.SHARED);
         // TODO - should reflect changes to task output file
         debugLinkElements.getOutgoing().artifact(debugLinkFile, new Action<ConfigurablePublishArtifact>() {
             @Override
@@ -165,6 +172,7 @@ public class CppLibraryPlugin implements Plugin<ProjectInternal> {
         debugRuntimeElements.setCanBeResolved(false);
         debugRuntimeElements.getAttributes().attribute(Usage.USAGE_ATTRIBUTE, runtimeUsage);
         debugRuntimeElements.getAttributes().attribute(DEBUGGABLE_ATTRIBUTE, true);
+        debugRuntimeElements.getAttributes().attribute(LINKAGE_ATTRIBUTE, Linkage.SHARED);
         debugRuntimeElements.getOutgoing().artifact(linkDebug.getBinaryFile());
 
         final Configuration releaseLinkElements = configurations.maybeCreate("releaseLinkElements");
@@ -172,6 +180,7 @@ public class CppLibraryPlugin implements Plugin<ProjectInternal> {
         releaseLinkElements.setCanBeResolved(false);
         releaseLinkElements.getAttributes().attribute(Usage.USAGE_ATTRIBUTE, linkUsage);
         releaseLinkElements.getAttributes().attribute(DEBUGGABLE_ATTRIBUTE, false);
+        releaseLinkElements.getAttributes().attribute(LINKAGE_ATTRIBUTE, Linkage.SHARED);
         // TODO - should reflect changes to task output file
         releaseLinkElements.getOutgoing().artifact(releaseLinkFile, new Action<ConfigurablePublishArtifact>() {
             @Override
@@ -185,7 +194,13 @@ public class CppLibraryPlugin implements Plugin<ProjectInternal> {
         releaseRuntimeElements.setCanBeResolved(false);
         releaseRuntimeElements.getAttributes().attribute(Usage.USAGE_ATTRIBUTE, runtimeUsage);
         releaseRuntimeElements.getAttributes().attribute(DEBUGGABLE_ATTRIBUTE, false);
+        releaseRuntimeElements.getAttributes().attribute(LINKAGE_ATTRIBUTE, Linkage.SHARED);
         releaseRuntimeElements.getOutgoing().artifact(linkRelease.getBinaryFile());
+
+
+
+        createStaticDependenciesElements(configurations, implementation, linkUsage, runtimeUsage, project, library);
+
 
         project.getPluginManager().withPlugin("maven-publish", new Action<AppliedPlugin>() {
             @Override
@@ -245,4 +260,72 @@ public class CppLibraryPlugin implements Plugin<ProjectInternal> {
         });
     }
 
+    private void createStaticDependenciesElements(ConfigurationContainer configurations, Configuration implementation, Usage linkUsage, Usage runtimeUsage, Project project, final CppLibrary library) {
+        TaskContainer tasks = project.getTasks();
+        ProviderFactory providers = project.getProviders();
+        DirectoryProperty buildDirectory = project.getLayout().getBuildDirectory();
+
+        final CreateStaticLibrary createDebug = (CreateStaticLibrary) tasks.getByName("createDebugStatic");
+        // TODO - make this lazy, make a query method on the link task
+        final PlatformToolProvider platformToolChain = ((NativeToolChainInternal) createDebug.getToolChain()).select((NativePlatformInternal) createDebug.getTargetPlatform());
+        // TODO - should reflect changes to the task configuration
+        Provider<RegularFile> debugLinkFile = buildDirectory.file(providers.provider(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                return platformToolChain.getStaticLibraryName("lib/main/debug/static/" + library.getBaseName().get());
+            }
+        }));
+
+        final CreateStaticLibrary createRelease = (CreateStaticLibrary) tasks.getByName("createReleaseStatic");
+        // TODO - should reflect changes to the task configuration
+        Provider<RegularFile> releaseLinkFile = buildDirectory.file(providers.provider(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                return platformToolChain.getStaticLibraryName("lib/main/release/static/" + library.getBaseName().get());
+            }
+        }));
+
+
+        final Configuration debugLinkElements = configurations.maybeCreate("debugLinkStaticElements");
+        debugLinkElements.extendsFrom(implementation);
+        debugLinkElements.setCanBeResolved(false);
+        debugLinkElements.getAttributes().attribute(Usage.USAGE_ATTRIBUTE, linkUsage);
+        debugLinkElements.getAttributes().attribute(DEBUGGABLE_ATTRIBUTE, true);
+        debugLinkElements.getAttributes().attribute(LINKAGE_ATTRIBUTE, Linkage.STATIC);
+        // TODO - should reflect changes to task output file
+        debugLinkElements.getOutgoing().artifact(debugLinkFile, new Action<ConfigurablePublishArtifact>() {
+            @Override
+            public void execute(ConfigurablePublishArtifact artifact) {
+                artifact.builtBy(createDebug);
+            }
+        });
+
+        final Configuration debugRuntimeElements = configurations.maybeCreate("debugRuntimeStaticElements");
+        debugRuntimeElements.extendsFrom(implementation);
+        debugRuntimeElements.setCanBeResolved(false);
+        debugRuntimeElements.getAttributes().attribute(Usage.USAGE_ATTRIBUTE, runtimeUsage);
+        debugRuntimeElements.getAttributes().attribute(DEBUGGABLE_ATTRIBUTE, true);
+        debugRuntimeElements.getAttributes().attribute(LINKAGE_ATTRIBUTE, Linkage.STATIC);
+
+        final Configuration releaseLinkElements = configurations.maybeCreate("releaseLinkStaticElements");
+        releaseLinkElements.extendsFrom(implementation);
+        releaseLinkElements.setCanBeResolved(false);
+        releaseLinkElements.getAttributes().attribute(Usage.USAGE_ATTRIBUTE, linkUsage);
+        releaseLinkElements.getAttributes().attribute(DEBUGGABLE_ATTRIBUTE, false);
+        releaseLinkElements.getAttributes().attribute(LINKAGE_ATTRIBUTE, Linkage.STATIC);
+        // TODO - should reflect changes to task output file
+        releaseLinkElements.getOutgoing().artifact(releaseLinkFile, new Action<ConfigurablePublishArtifact>() {
+            @Override
+            public void execute(ConfigurablePublishArtifact artifact) {
+                artifact.builtBy(createRelease);
+            }
+        });
+
+        final Configuration releaseRuntimeElements = configurations.maybeCreate("releaseRuntimeStaticElements");
+        releaseRuntimeElements.extendsFrom(implementation);
+        releaseRuntimeElements.setCanBeResolved(false);
+        releaseRuntimeElements.getAttributes().attribute(Usage.USAGE_ATTRIBUTE, runtimeUsage);
+        releaseRuntimeElements.getAttributes().attribute(DEBUGGABLE_ATTRIBUTE, false);
+        releaseRuntimeElements.getAttributes().attribute(LINKAGE_ATTRIBUTE, Linkage.STATIC);
+    }
 }

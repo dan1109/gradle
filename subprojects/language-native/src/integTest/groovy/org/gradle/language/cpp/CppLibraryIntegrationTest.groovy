@@ -103,6 +103,31 @@ class CppLibraryIntegrationTest extends AbstractCppInstalledToolChainIntegration
         !output.contains('compiling with feature enabled')
     }
 
+    def "can build static and shared variants of library"() {
+        given:
+        settingsFile << "rootProject.name = 'hello'"
+        def lib = new CppGreeterWithOptionalFeature()
+        lib.writeToProject(testDirectory)
+
+        and:
+        buildFile << """
+            apply plugin: 'cpp-library'
+         """
+
+        expect:
+        succeeds "linkDebug"
+
+        result.assertTasksExecuted(compileAndLinkTasks(debug))
+        sharedLibrary("build/lib/main/debug/hello").assertExists()
+        staticLibrary("build/lib/main/debug/static/hello").assertDoesNotExist()
+
+        succeeds "createReleaseStatic"
+
+        result.assertTasksExecuted(compileAndCreateTasks(release))
+        sharedLibrary("build/lib/main/release/hello").assertDoesNotExist()
+        staticLibrary("build/lib/main/release/static/hello").assertExists()
+    }
+
     def "build logic can change source layout convention"() {
         def lib = new CppLib()
         settingsFile << "rootProject.name = 'hello'"

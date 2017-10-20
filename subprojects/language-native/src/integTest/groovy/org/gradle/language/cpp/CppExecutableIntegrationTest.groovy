@@ -290,6 +290,35 @@ class CppExecutableIntegrationTest extends AbstractCppInstalledToolChainIntegrat
         sharedLibrary("app/build/install/main/debug/lib/hello").file.assertExists()
     }
 
+    def "can compile and statically link against a library"() {
+        settingsFile << "include 'app', 'hello'"
+        def app = new CppAppWithLibrary()
+
+        given:
+        buildFile << """
+            project(':app') {
+                apply plugin: 'cpp-executable'
+                dependencies {
+                    implementation project(':hello')
+                }
+            }
+            project(':hello') {
+                apply plugin: 'cpp-library'
+            }
+"""
+        app.greeter.writeToProject(file("hello"))
+        app.main.writeToProject(file("app"))
+
+        expect:
+        succeeds ":app:installDebugStatic"
+
+        result.assertTasksExecuted(compileAndCreateTasks([':hello'], debug), compileAndLinkStaticTasks([':app'], debug), installTaskDebugStatic(':app'))
+        executable("app/build/exe/main/debug/static/app").assertExists()
+        staticLibrary("hello/build/lib/main/debug/static/hello").assertExists()
+        installation("app/build/install/main/debug/static").exec().out == app.expectedOutput
+        sharedLibrary("app/build/install/main/debug/lib/hello").file.assertDoesNotExist()
+    }
+
     def "can compile and link against a library with debug and release variants"() {
         settingsFile << "include 'app', 'hello'"
         def app = new CppAppWithLibraryAndOptionalFeature()
