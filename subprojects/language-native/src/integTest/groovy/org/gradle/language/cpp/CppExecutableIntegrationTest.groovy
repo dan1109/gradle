@@ -17,12 +17,14 @@
 package org.gradle.language.cpp
 
 import org.gradle.nativeplatform.fixtures.app.CppApp
+import org.gradle.nativeplatform.fixtures.app.CppAppUsesLoggerWithLibraries
 import org.gradle.nativeplatform.fixtures.app.CppAppWithLibraries
 import org.gradle.nativeplatform.fixtures.app.CppAppWithLibrariesWithApiDependencies
 import org.gradle.nativeplatform.fixtures.app.CppAppWithLibrary
 import org.gradle.nativeplatform.fixtures.app.CppAppWithLibraryAndOptionalFeature
 import org.gradle.nativeplatform.fixtures.app.CppAppWithOptionalFeature
 import org.gradle.nativeplatform.fixtures.app.CppCompilerDetectingTestApp
+import spock.lang.Ignore
 
 import static org.gradle.util.Matchers.containsText
 
@@ -316,7 +318,7 @@ class CppExecutableIntegrationTest extends AbstractCppInstalledToolChainIntegrat
         executable("app/build/exe/main/debug/static/app").assertExists()
         staticLibrary("hello/build/lib/main/debug/static/hello").assertExists()
         installation("app/build/install/main/debug/static").exec().out == app.expectedOutput
-        sharedLibrary("app/build/install/main/debug/lib/hello").file.assertDoesNotExist()
+        file("app/build/install/main/debug/static/lib").assertHasDescendants(executable('app').file.name)
     }
 
     def "can compile and link against a library with debug and release variants"() {
@@ -402,6 +404,49 @@ class CppExecutableIntegrationTest extends AbstractCppInstalledToolChainIntegrat
         sharedLibrary("app/build/install/main/debug/lib/shuffle").file.assertExists()
     }
 
+    def "can compile and statically link against library with api and implementation dependencies"() {
+        settingsFile << "include 'app', 'deck', 'card', 'shuffle'"
+        def app = new CppAppWithLibrariesWithApiDependencies()
+
+        given:
+        buildFile << """
+            project(':app') {
+                apply plugin: 'cpp-executable'
+                dependencies {
+                    implementation project(':deck')
+                }
+            }
+            project(':deck') {
+                apply plugin: 'cpp-library'
+                dependencies {
+                    api project(':card')
+                    implementation project(':shuffle')
+                }
+            }
+            project(':card') {
+                apply plugin: 'cpp-library'
+            }
+            project(':shuffle') {
+                apply plugin: 'cpp-library'
+            }
+"""
+        app.deck.writeToProject(file("deck"))
+        app.card.writeToProject(file("card"))
+        app.shuffle.writeToProject(file("shuffle"))
+        app.main.writeToProject(file("app"))
+
+        expect:
+        succeeds ":app:installDebugStatic"
+
+        result.assertTasksExecuted(compileAndCreateTasks([':card', ':deck', ':shuffle'], debug), compileAndLinkStaticTasks([':app'], debug), installTaskDebugStatic(':app'))
+        staticLibrary("deck/build/lib/main/debug/static/deck").assertExists()
+        staticLibrary("card/build/lib/main/debug/static/card").assertExists()
+        staticLibrary("shuffle/build/lib/main/debug/static/shuffle").assertExists()
+        executable("app/build/exe/main/debug/static/app").assertExists()
+        installation("app/build/install/main/debug/static").exec().out == app.expectedOutput
+        file("app/build/install/main/debug/static/lib").assertHasDescendants(executable('app').file.name)
+    }
+
     def "honors changes to library buildDir"() {
         settingsFile << "include 'app', 'lib1', 'lib2'"
         def app = new CppAppWithLibraries()
@@ -439,8 +484,81 @@ class CppExecutableIntegrationTest extends AbstractCppInstalledToolChainIntegrat
         sharedLibrary("lib2/out/lib/main/debug/lib2").assertExists()
         executable("app/build/exe/main/debug/app").assertExists()
         installation("app/build/install/main/debug").exec().out == app.expectedOutput
-        sharedLibrary("app/build/install/main/debug/lib/lib1").file.assertExists()
-        sharedLibrary("app/build/install/main/debug/lib/lib2").file.assertExists()
+        file("app/build/install/main/debug/lib").assertHasDescendants([
+            executable('app'), sharedLibrary('lib1'), sharedLibrary('lib2')]*.file*.name)
+    }
+
+    @Ignore("https://github.com/gradle/gradle-native/issues/230")
+    def "fails when coincidental undefined symbols match 2nd level transitive dependency"() {
+        settingsFile << "include 'app', 'lib1', 'lib2'"
+        def app = new CppAppUsesLoggerWithLibraries()
+
+        given:
+        buildFile << """
+            project(':app') {
+                apply plugin: 'cpp-executable'
+                dependencies {
+                    implementation project(':lib1')
+                }
+            }
+            project(':lib1') {
+                apply plugin: 'cpp-library'
+                dependencies {
+                    implementation project(':lib2')
+                }
+            }
+            project(':lib2') {
+                apply plugin: 'cpp-library'
+            }
+"""
+        app.greeterLib.writeToProject(file("lib1"))
+        app.loggerLib.writeToProject(file("lib2"))
+        app.main.writeToProject(file("app"))
+
+        expect:
+        fails ":app:assemble"
+
+        outputContains("""Undefined symbols for architecture x86_64:
+  "Logger::log(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >&)", referenced from:
+      _main in main.o""")
+    }
+
+    def "can statically link transitive dependencies"() {
+        settingsFile << "include 'app', 'lib1', 'lib2'"
+        def app = new CppAppWithLibraries()
+
+        given:
+        buildFile << """
+            project(':app') {
+                apply plugin: 'cpp-executable'
+                dependencies {
+                    implementation project(':lib1')
+                }
+            }
+            project(':lib1') {
+                apply plugin: 'cpp-library'
+                dependencies {
+                    implementation project(':lib2')
+                }
+            }
+            project(':lib2') {
+                apply plugin: 'cpp-library'
+            }
+"""
+        app.greeterLib.writeToProject(file("lib1"))
+        app.loggerLib.writeToProject(file("lib2"))
+        app.main.writeToProject(file("app"))
+
+        expect:
+        succeeds ":app:installDebugStatic"
+
+        result.assertTasksExecuted(compileAndCreateTasks([':lib1', ':lib2'], debug), compileAndLinkStaticTasks([':app'], debug), installTaskDebugStatic(':app'))
+
+        staticLibrary("lib1/build/lib/main/debug/static/lib1").assertExists()
+        staticLibrary("lib2/build/lib/main/debug/static/lib2").assertExists()
+        executable("app/build/exe/main/debug/static/app").assertExists()
+        installation("app/build/install/main/debug/static").exec().out == app.expectedOutput
+        file("app/build/install/main/debug/static/lib").assertHasDescendants(executable('app').file.name)
     }
 
     def "honors changes to library public header location"() {
