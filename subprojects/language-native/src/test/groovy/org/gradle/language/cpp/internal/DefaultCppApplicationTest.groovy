@@ -26,9 +26,9 @@ class DefaultCppApplicationTest extends Specification {
         def app = new DefaultCppApplication("main", TestUtil.objectFactory(), Stub(FileOperations), Stub(ConfigurationContainer))
 
         expect:
-        app.debugExecutable.name == "mainDebug"
+        app.debugExecutable.name == "mainDebugShared"
         app.debugExecutable.debuggable
-        app.releaseExecutable.name == "mainRelease"
+        app.releaseExecutable.name == "mainReleaseShared"
         !app.releaseExecutable.debuggable
         app.developmentBinary == app.debugExecutable
     }

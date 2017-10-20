@@ -70,7 +70,7 @@ class CppExecutablePublishingIntegrationTest extends AbstractCppInstalledToolCha
         def debug = repo.module('some.group', 'test_debug', '1.2')
         debug.assertPublished()
         debug.assertArtifactsPublished(executableName("test_debug-1.2"), "test_debug-1.2.pom", "test_debug-1.2-module.json")
-        debug.artifactFile(type: executableExtension).assertIsCopyOf(executable("build/exe/main/debug/test").file)
+        debug.artifactFile(type: executableExtension).assertIsCopyOf(executable("build/exe/main/debug/shared/test").file)
 
         debug.parsedPom.scopes.isEmpty()
 
@@ -83,7 +83,7 @@ class CppExecutablePublishingIntegrationTest extends AbstractCppInstalledToolCha
         def release = repo.module('some.group', 'test_release', '1.2')
         release.assertPublished()
         release.assertArtifactsPublished(executableName("test_release-1.2"), "test_release-1.2.pom", "test_release-1.2-module.json")
-        release.artifactFile(type: executableExtension).assertIsCopyOf(executable("build/exe/main/release/test").file)
+        release.artifactFile(type: executableExtension).assertIsCopyOf(executable("build/exe/main/release/shared/test").file)
 
         release.parsedPom.scopes.isEmpty()
 

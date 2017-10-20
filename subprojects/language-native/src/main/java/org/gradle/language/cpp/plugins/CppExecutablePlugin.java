@@ -85,13 +85,13 @@ public class CppExecutablePlugin implements Plugin<ProjectInternal> {
         application.getBaseName().set(project.getName());
 
         // Install the debug variant by default
-        InstallExecutable install = (InstallExecutable) tasks.getByName("installDebug");
+        InstallExecutable install = (InstallExecutable) tasks.getByName("installDebugShared");
         tasks.getByName(LifecycleBasePlugin.ASSEMBLE_TASK_NAME).dependsOn(install);
 
         // TODO - add lifecycle tasks to assemble each variant
 
-        LinkExecutable linkDebug = (LinkExecutable) tasks.getByName("linkDebug");
-        LinkExecutable linkRelease = (LinkExecutable) tasks.getByName("linkRelease");
+        LinkExecutable linkDebug = (LinkExecutable) tasks.getByName("linkDebugShared");
+        LinkExecutable linkRelease = (LinkExecutable) tasks.getByName("linkReleaseShared");
 
         final Usage runtimeUsage = objectFactory.named(Usage.class, Usage.NATIVE_RUNTIME);
 

@@ -34,8 +34,8 @@ public class DefaultCppApplication extends DefaultCppComponent implements CppApp
     @Inject
     public DefaultCppApplication(String name, ObjectFactory objectFactory, FileOperations fileOperations, ConfigurationContainer configurations) {
         super(name, fileOperations, objectFactory, configurations);
-        debugShared = objectFactory.newInstance(DefaultCppExecutable.class, name + "Debug", objectFactory, getBaseName(), true, getCppSource(), getPrivateHeaderDirs(), configurations, getImplementationDependencies(), Linkage.SHARED);
-        releaseShared = objectFactory.newInstance(DefaultCppExecutable.class, name + "Release", objectFactory, getBaseName(), false, getCppSource(), getPrivateHeaderDirs(), configurations, getImplementationDependencies(), Linkage.SHARED);
+        debugShared = objectFactory.newInstance(DefaultCppExecutable.class, name + "DebugShared", objectFactory, getBaseName(), true, getCppSource(), getPrivateHeaderDirs(), configurations, getImplementationDependencies(), Linkage.SHARED);
+        releaseShared = objectFactory.newInstance(DefaultCppExecutable.class, name + "ReleaseShared", objectFactory, getBaseName(), false, getCppSource(), getPrivateHeaderDirs(), configurations, getImplementationDependencies(), Linkage.SHARED);
         debugStatic = objectFactory.newInstance(DefaultCppExecutable.class, name + "DebugStatic", objectFactory, getBaseName(), true, getCppSource(), getPrivateHeaderDirs(), configurations, getImplementationDependencies(), Linkage.STATIC);
         releaseStatic = objectFactory.newInstance(DefaultCppExecutable.class, name + "ReleaseStatic", objectFactory, getBaseName(), false, getCppSource(), getPrivateHeaderDirs(), configurations, getImplementationDependencies(), Linkage.STATIC);
     }

@@ -90,8 +90,8 @@ class CppLibraryPublishingIntegrationTest extends AbstractCppInstalledToolChainI
         def debug = repo.module('some.group', 'test_debug', '1.2')
         debug.assertPublished()
         debug.assertArtifactsPublished(withSharedLibrarySuffix("test_debug-1.2"), withLinkLibrarySuffix("test_debug-1.2"), "test_debug-1.2.pom", "test_debug-1.2-module.json")
-        debug.artifactFile(type: sharedLibraryExtension).assertIsCopyOf(sharedLibrary("build/lib/main/debug/test").file)
-        debug.artifactFile(type: linkLibrarySuffix).assertIsCopyOf(sharedLibrary("build/lib/main/debug/test").linkFile)
+        debug.artifactFile(type: sharedLibraryExtension).assertIsCopyOf(sharedLibrary("build/lib/main/debug/shared/test").file)
+        debug.artifactFile(type: linkLibrarySuffix).assertIsCopyOf(sharedLibrary("build/lib/main/debug/shared/test").linkFile)
 
         debug.parsedPom.scopes.isEmpty()
 
@@ -111,8 +111,8 @@ class CppLibraryPublishingIntegrationTest extends AbstractCppInstalledToolChainI
         def release = repo.module('some.group', 'test_release', '1.2')
         release.assertPublished()
         release.assertArtifactsPublished(withSharedLibrarySuffix("test_release-1.2"), withLinkLibrarySuffix("test_release-1.2"), "test_release-1.2.pom", "test_release-1.2-module.json")
-        release.artifactFile(type: sharedLibraryExtension).assertIsCopyOf(sharedLibrary("build/lib/main/release/test").file)
-        release.artifactFile(type: linkLibrarySuffix).assertIsCopyOf(sharedLibrary("build/lib/main/release/test").linkFile)
+        release.artifactFile(type: sharedLibraryExtension).assertIsCopyOf(sharedLibrary("build/lib/main/release/shared/test").file)
+        release.artifactFile(type: linkLibrarySuffix).assertIsCopyOf(sharedLibrary("build/lib/main/release/shared/test").linkFile)
 
         release.parsedPom.scopes.isEmpty()
 
@@ -259,10 +259,10 @@ class CppLibraryPublishingIntegrationTest extends AbstractCppInstalledToolChainI
 
         then:
         noExceptionThrown()
-        sharedLibrary(consumer.file("build/install/main/debug/lib/deck")).file.assertExists()
-        sharedLibrary(consumer.file("build/install/main/debug/lib/card")).file.assertExists()
-        sharedLibrary(consumer.file("build/install/main/debug/lib/shuffle")).file.assertExists()
-        installation(consumer.file("build/install/main/debug")).exec().out == app.expectedOutput
+        sharedLibrary(consumer.file("build/install/main/debug/shared/lib/deck")).file.assertExists()
+        sharedLibrary(consumer.file("build/install/main/debug/shared/lib/card")).file.assertExists()
+        sharedLibrary(consumer.file("build/install/main/debug/shared/lib/shuffle")).file.assertExists()
+        installation(consumer.file("build/install/main/debug/shared")).exec().out == app.expectedOutput
     }
 
     def "can publish a library with external dependencies to a Maven repository"() {
@@ -342,10 +342,10 @@ class CppLibraryPublishingIntegrationTest extends AbstractCppInstalledToolChainI
 
         then:
         noExceptionThrown()
-        sharedLibrary(consumer.file("build/install/main/debug/lib/deck")).file.assertExists()
-        sharedLibrary(consumer.file("build/install/main/debug/lib/card")).file.assertExists()
-        sharedLibrary(consumer.file("build/install/main/debug/lib/shuffle")).file.assertExists()
-        installation(consumer.file("build/install/main/debug")).exec().out == app.expectedOutput
+        sharedLibrary(consumer.file("build/install/main/debug/shared/lib/deck")).file.assertExists()
+        sharedLibrary(consumer.file("build/install/main/debug/shared/lib/card")).file.assertExists()
+        sharedLibrary(consumer.file("build/install/main/debug/shared/lib/shuffle")).file.assertExists()
+        installation(consumer.file("build/install/main/debug/shared")).exec().out == app.expectedOutput
     }
 
 }

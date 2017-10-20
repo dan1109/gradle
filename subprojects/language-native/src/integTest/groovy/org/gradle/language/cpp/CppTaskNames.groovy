@@ -49,15 +49,15 @@ trait CppTaskNames {
         installTask(project, RELEASE)
     }
 
-    String[] compileTasks(String project = '', String buildType, String linkage = '') {
+    String[] compileTasks(String project = '', String buildType, String linkage = 'Shared') {
         ["${project}:depend${buildType}${linkage}Cpp", compileTask(project, buildType, linkage)] as String[]
     }
 
-    String compileTask(String project = '', String buildType, String linkage = '') {
+    String compileTask(String project = '', String buildType, String linkage = 'Shared') {
         "${project}:compile${buildType}${linkage}Cpp"
     }
 
-    String linkTask(String project = '', String buildType, String linkage = '') {
+    String linkTask(String project = '', String buildType, String linkage = 'Shared') {
         "${project}:link${buildType}${linkage}"
     }
 
@@ -65,7 +65,7 @@ trait CppTaskNames {
         "${project}:create${buildType}Static"
     }
 
-    String installTask(String project = '', String buildType, String linkage = '') {
+    String installTask(String project = '', String buildType, String linkage = 'Shared') {
         "${project}:install${buildType}${linkage}"
     }
 

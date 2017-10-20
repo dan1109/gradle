@@ -45,8 +45,8 @@ public class DefaultCppLibrary extends DefaultCppComponent implements CppLibrary
         super(name, fileOperations, objectFactory, configurations);
         publicHeaders = fileOperations.files();
         publicHeadersWithConvention = createDirView(publicHeaders, "src/" + name + "/public");
-        debugShared = objectFactory.newInstance(DefaultCppSharedLibrary.class, name + "Debug", objectFactory, getBaseName(), true, getCppSource(), getAllHeaderDirs(), configurations, getImplementationDependencies());
-        releaseShared = objectFactory.newInstance(DefaultCppSharedLibrary.class, name + "Release", objectFactory, getBaseName(), false, getCppSource(), getAllHeaderDirs(), configurations, getImplementationDependencies());
+        debugShared = objectFactory.newInstance(DefaultCppSharedLibrary.class, name + "DebugShared", objectFactory, getBaseName(), true, getCppSource(), getAllHeaderDirs(), configurations, getImplementationDependencies());
+        releaseShared = objectFactory.newInstance(DefaultCppSharedLibrary.class, name + "ReleaseShared", objectFactory, getBaseName(), false, getCppSource(), getAllHeaderDirs(), configurations, getImplementationDependencies());
         debugStatic = objectFactory.newInstance(DefaultCppStaticLibrary.class, name + "DebugStatic", objectFactory, getBaseName(), true, getCppSource(), getAllHeaderDirs(), configurations, getImplementationDependencies());
         releaseStatic = objectFactory.newInstance(DefaultCppStaticLibrary.class, name + "ReleaseStatic", objectFactory, getBaseName(), false, getCppSource(), getAllHeaderDirs(), configurations, getImplementationDependencies());
 

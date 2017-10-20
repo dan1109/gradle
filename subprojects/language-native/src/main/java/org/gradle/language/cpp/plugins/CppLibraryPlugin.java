@@ -105,23 +105,23 @@ public class CppLibraryPlugin implements Plugin<ProjectInternal> {
         // Define the outgoing artifacts
         // TODO - move this to the base plugin
 
-        final LinkSharedLibrary linkDebug = (LinkSharedLibrary) tasks.getByName("linkDebug");
+        final LinkSharedLibrary linkDebug = (LinkSharedLibrary) tasks.getByName("linkDebugShared");
         // TODO - make this lazy, make a query method on the link task
         final PlatformToolProvider platformToolChain = ((NativeToolChainInternal) linkDebug.getToolChain()).select((NativePlatformInternal) linkDebug.getTargetPlatform());
         // TODO - should reflect changes to the task configuration
         Provider<RegularFile> debugLinkFile = buildDirectory.file(providers.provider(new Callable<String>() {
             @Override
             public String call() throws Exception {
-                return platformToolChain.getSharedLibraryLinkFileName("lib/main/debug/" + library.getBaseName().get());
+                return platformToolChain.getSharedLibraryLinkFileName("lib/main/debug/shared/" + library.getBaseName().get());
             }
         }));
 
-        final LinkSharedLibrary linkRelease = (LinkSharedLibrary) tasks.getByName("linkRelease");
+        final LinkSharedLibrary linkRelease = (LinkSharedLibrary) tasks.getByName("linkReleaseShared");
         // TODO - should reflect changes to the task configuration
         Provider<RegularFile> releaseLinkFile = buildDirectory.file(providers.provider(new Callable<String>() {
             @Override
             public String call() throws Exception {
-                return platformToolChain.getSharedLibraryLinkFileName("lib/main/release/" + library.getBaseName().get());
+                return platformToolChain.getSharedLibraryLinkFileName("lib/main/release/shared/" + library.getBaseName().get());
             }
         }));
 
