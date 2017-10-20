@@ -45,11 +45,15 @@ public interface CppApplication extends CppComponent {
 
     /**
      * Returns the statically linked debug executable for this application.
+     *
+     * @since 4.4
      */
     CppExecutable getDebugStaticExecutable();
 
     /**
      * Returns the statically linked release executable for this application.
+     *
+     * @since 4.4
      */
     CppExecutable getReleaseStaticExecutable();
 }
